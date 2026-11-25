@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spaced Revision Kit</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#e7ecff;background:#0b1022;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top right,#203451,#0b1022 55%)}
+main{width:min(780px,calc(100% - 26px));margin:auto;padding:32px 0 80px}
+header{font-weight:800;letter-spacing:.03em;color:#79e5bd}h1{font-size:clamp(30px,6vw,48px);line-height:1.1;letter-spacing:-.05em;margin:30px 0 12px}
+p{color:#a8b8d2;line-height:1.6}section,.stat{border:1px solid #34455f;background:#17243a;border-radius:17px;padding:18px;margin:16px 0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{margin:0}.stat b{display:block;font-size:26px}
+.stat small{color:#afc0d8}button,.file{border:0;border-radius:10px;padding:11px 13px;background:#6fe5b7;color:#071e21;cursor:pointer;font:inherit;font-weight:650}
+button.secondary,.file{background:#293d58;color:white}button.danger{background:#693041;color:white}
+.controls{display:flex;gap:9px;flex-wrap:wrap}.field{margin:12px 0}label{display:block;margin-bottom:6px;font-size:13px}
+input,textarea{font:inherit;border:1px solid #405977;background:#0d172b;color:white;padding:12px;border-radius:9px;width:100%}
+textarea{min-height:70px;resize:vertical} .flash{padding:30px 17px;text-align:center;border-radius:13px;background:#1d3150;min-height:135px;display:grid;align-content:center}
+.flash strong{font-size:clamp(20px,4vw,30px);white-space:pre-wrap;overflow-wrap:anywhere}.flash p{white-space:pre-wrap;overflow-wrap:anywhere;color:#b7f9d7}
+.center{text-align:center;margin-top:13px}.file input{display:none}.muted{color:#acbdd5;font-size:13px}.status{min-height:1.5em;color:#82e9c5;font-size:13px}footer{text-align:center;color:#8599b5;font-size:12px}
+@media(max-width:480px){.stat{padding:12px}.stat b{font-size:21px}section{padding:15px}}
+</style>
+</head>
+<body>
+<main>
+<header>SPACED / REVISION · FREE & OPEN SOURCE</header>
+<h1>याद रखो, सिर्फ पढ़ो मत।</h1>
+<p>Flashcards बनाओ और अपनी revision सही समय पर करो। कोई account, ads या cloud tracking नहीं।</p>
+<div class="stats"><div class="stat"><b id="total">0</b><small>Total</small></div><div class="stat"><b id="due">0</b><small>Due now</small></div><div class="stat"><b id="done">0</b><small>Practiced</small></div></div>
+<section><h2>Revision</h2><div id="study"></div><div id="reviewActions" class="controls center"></div><p class="status" id="reviewStatus"></p></section>
+<section><h2>नया Flashcard</h2><form id="add"><div class="field"><label for="topic">Topic</label><input id="topic" maxlength="80" value="Mathematics"></div>
+<div class="field"><label for="front">Question</label><textarea id="front" required maxlength="1200"></textarea></div>
+<div class="field"><label for="back">Answer</label><textarea id="back" required maxlength="2000"></textarea></div>
+<button>Add Card</button><p class="status" id="formStatus"></p></form></section>
+<section><h2>Your data</h2><div class="controls"><button class="secondary" id="export">Export JSON</button>
+<label class="file" for="import">Import JSON<input id="import" type="file" accept=".json,application/json"></label>
+<button class="danger" id="delete">Delete all</button></div>
+<p class="muted">Data stays in this browser's local storage. Export a backup before clearing browser data. Import replaces your current deck.</p><p class="status" id="dataStatus"></p></section>
+<footer>MIT license · Built for students · 100% local data</footer>
+</main>
+<script type="module">
+import {createCard,reviewCard,dueCards,summarize,validateDeck} from './src/scheduler.mjs';
+const key='spaced-revision-kit-v1';const $=id=>document.getElementById(id);let cards=[];let activeId=null;let reveal=false;
+try{const saved=localStorage.getItem(key);cards=saved?validateDeck(JSON.parse(saved)):[
+createCard({id:'example1',front:'न्यूटन का दूसरा नियम क्या है?',back:'F = ma',topic:'Physics'}),
+createCard({id:'example2',front:'(a + b)² का विस्तार?',back:'a² + 2ab + b²',topic:'Math'})]}catch(e){$('dataStatus').textContent='Stored data invalid: '+e.message}
+function save(){try{localStorage.setItem(key,JSON.stringify(cards))}catch(e){$('dataStatus').textContent='Cannot save: '+e.message}}
+function node(tag,txt){const e=document.createElement(tag);if(txt!==undefined)e.textContent=txt;return e}
+function draw(){const s=summarize(cards);$('total').textContent=s.total;$('due').textContent=s.due;$('done').textContent=s.practiced;
+const due=dueCards(cards);if(!due.some(c=>c.id===activeId)){activeId=due[0]?.id??null;reveal=false}
+const study=$('study'),actions=$('reviewActions');study.replaceChildren();actions.replaceChildren();const card=due.find(c=>c.id===activeId);
+if(!card){study.append(node('p','अभी कोई card Due नहीं है।'));return}
+const flash=node('div');flash.className='flash';flash.append(node('small',card.topic),node('strong',card.front));if(reveal)flash.append(node('p',card.back));study.append(flash);
+const b=(txt,fn,cls)=>{const x=node('button',txt);if(cls)x.className=cls;x.addEventListener('click',fn);actions.append(x)};
+if(!reveal){b('Show answer',()=>{reveal=true;draw()});b('Next card',()=>{activeId=due[(due.findIndex(c=>c.id===activeId)+1)%due.length].id;reveal=false;draw()},'secondary')}
+else for(const [g,label,cls] of [[0,'Forgot','danger'],[3,'Remembered','secondary'],[5,'Easy','']])b(label,()=>{cards=cards.map(c=>c.id===activeId?reviewCard(c,g):c);save();activeId=null;reveal=false;draw()},cls)
+}
+$('add').addEventListener('submit',e=>{e.preventDefault();const front=$('front').value.trim(),back=$('back').value.trim();if(!front||!back){$('formStatus').textContent='Question and answer required';return}
+const id=globalThis.crypto?.randomUUID?.()??String(Date.now())+'-'+Math.random();cards.push(createCard({id,front,back,topic:$('topic').value}));$('front').value='';$('back').value='';activeId=id;reveal=false;save();draw();$('formStatus').textContent='Card added'});
+$('export').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(cards,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=node('a');link.href=url;link.download='cards.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('dataStatus').textContent='Backup download requested'});
+$('import').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{if(f.size>5000000)throw Error('File exceeds 5 MB');const incoming=validateDeck(JSON.parse(await f.text()));if(!confirm('Replace existing cards with '+incoming.length+' imported cards?'))return;cards=incoming;activeId=null;reveal=false;save();draw();$('dataStatus').textContent='Imported '+incoming.length+' cards'}catch(err){$('dataStatus').textContent='Import failed: '+err.message}finally{e.target.value=''}});
+$('delete').addEventListener('click',()=>{if(!confirm('Delete all local cards?'))return;cards=[];activeId=null;reveal=false;save();draw();$('dataStatus').textContent='Deleted local cards'});draw();
+</script>
+</body></html>
