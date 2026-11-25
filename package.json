@@ -1,0 +1,12 @@
+{
+  "name": "spaced-revision-kit",
+  "version": "0.1.0",
+  "description": "Dependency-free spaced repetition for students and independent developers",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "engines": {"node": ">=20"},
+  "exports": {".": "./src/scheduler.mjs"},
+  "scripts": {"test": "node --test"},
+  "keywords": ["spaced-repetition", "revision", "learning", "flashcards", "offline"]
+}
