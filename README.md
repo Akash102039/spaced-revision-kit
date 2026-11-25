@@ -43,7 +43,7 @@ The review function does not mutate its inputs. All due dates are ISO 8601 UTC t
 
 ## Browser demo
 
-The ready-to-use offline-first browser demo and source files are packaged separately until the demo is published on GitHub. The core scheduling library in this repository can already be used independently.
+A browser-based flashcard demo is included in [index.html](index.html). It stores decks in your browser's local storage and supports adding cards, reviewing them, importing/exporting JSON backups and clearing local data. Run a local static server in the repository directory (for example `python3 -m http.server 8000`) and open `http://localhost:8000`. Opening the HTML file with `file://` may block ES module imports in some browsers. GitHub Pages deployment has not yet been enabled.
 
 ## Contributing
 
